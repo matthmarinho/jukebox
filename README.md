@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Malungo Jukebox
 
-## Getting Started
+Sistema de jukebox da **Barbearia Malungo** (Next.js + Tailwind CSS + Postgres no Neon + Vercel).
 
-First, run the development server:
+## Variáveis de Ambiente
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Configure no `.env.local` (ambiente local) e em **Settings → Environment Variables** na Vercel:
+
+```env
+DATABASE_URL=postgresql://usuario:senha@ep-xxxx.neon.tech/neondb?sslmode=require
+ADMIN_PASSWORD=sua-senha-de-admin
+SESSION_SECRET=uma-chave-secreta-longa-e-aleatoria
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Banco de Dados (Neon)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Para criar/atualizar as tabelas no banco Neon, rode localmente:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run db:migrate
+```
 
-## Learn More
+## Subindo na Vercel
 
-To learn more about Next.js, take a look at the following resources:
+1. Suba o repositório para o GitHub / GitLab / Bitbucket:
+   ```bash
+   git add .
+   git commit -m "feat: malungo jukebox"
+   git push
+   ```
+2. Acesse [vercel.com/new](https://vercel.com/new) e importe o repositório.
+3. Em **Environment Variables**, adicione:
+   - `DATABASE_URL`
+   - `ADMIN_PASSWORD`
+   - `SESSION_SECRET`
+4. Clique em **Deploy**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Rotas do Sistema
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/` — Página dos clientes (escolha de até 4 músicas por lote, filtro A–Z por álbum ou artista e visualização da fila).
+- `/admin` — Painel administrativo protegido por senha (busca e adição de álbuns do YouTube Music, remoção e controle da fila).
+- `/player` — Player da barbearia protegido por senha (reproduz a fila automaticamente e entra em modo aleatório após 5 minutos sem pedidos de clientes).
