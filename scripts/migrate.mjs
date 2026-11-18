@@ -39,6 +39,11 @@ const statements = [
   )`,
   `CREATE INDEX IF NOT EXISTS requests_status_idx ON requests(status, id)`,
   `CREATE INDEX IF NOT EXISTS requests_batch_idx ON requests(batch_id)`,
+  `CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
 ];
 
 for (const s of statements) await sql.query(s);

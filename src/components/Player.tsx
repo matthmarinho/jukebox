@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getClientPublicIps } from "@/lib/client-ip";
 
 type Track = {
   id: number;
@@ -54,11 +55,12 @@ export default function Player() {
     try {
       const idleElapsed = Date.now() - lastCustomerActivityRef.current;
       const allowRandom = idleElapsed >= IDLE_TIMEOUT_MS;
+      const ips = await getClientPublicIps();
 
       const res = await fetch("/api/player/next", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ allowRandom }),
+        body: JSON.stringify({ allowRandom, ...ips }),
       });
       if (res.status === 401) {
         setNote("Sessão expirada. Recarregue e entre novamente.");

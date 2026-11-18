@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getClientPublicIps } from "@/lib/client-ip";
 import LetterFilter, { FilterMode, getFirstLetter } from "./LetterFilter";
 
 type Track = { id: number; title: string; artist: string; duration: number | null };
@@ -12,6 +13,7 @@ type Me = {
   slotsLeft: number;
   remaining: number;
   canPick: boolean;
+  onNetwork: boolean;
 };
 type QItem = { id: number; status: "queued" | "playing"; title: string; artist: string; cover: string | null };
 
@@ -41,7 +43,11 @@ export default function Jukebox() {
   const [sending, setSending] = useState(false);
 
   const refresh = useCallback(async () => {
-    const [m, q] = await Promise.all([fetch("/api/me"), fetch("/api/queue")]);
+    const ips = await getClientPublicIps();
+    const qs = new URLSearchParams();
+    if (ips.ipv4) qs.set("ipv4", ips.ipv4);
+    if (ips.ipv6) qs.set("ipv6", ips.ipv6);
+    const [m, q] = await Promise.all([fetch(`/api/me?${qs.toString()}`), fetch("/api/queue")]);
     if (m.ok) setMe(await m.json());
     if (q.ok) setQueue((await q.json()).queue);
   }, []);
@@ -81,10 +87,11 @@ export default function Jukebox() {
     if (sending || selected.size < 1) return;
     setSending(true);
     setMsg(null);
+    const ips = await getClientPublicIps();
     const res = await fetch("/api/requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ trackIds: [...selected.keys()] }),
+      body: JSON.stringify({ trackIds: [...selected.keys()], ...ips }),
     });
     const data = await res.json();
     setSending(false);
@@ -98,7 +105,8 @@ export default function Jukebox() {
     refresh();
   };
 
-  const locked = me ? !me.canPick : false;
+  const offNetwork = me ? !me.onNetwork : false;
+  const locked = me ? !me.canPick || offNetwork : false;
   const countIn = (a: Album) => a.tracks.filter((t) => selected.has(t.id)).length;
   const myRequestIds = useMemo(() => new Set(me?.picks.map((p) => p.id) ?? []), [me]);
   const nowPlaying = queue.find((q) => q.status === "playing") ?? queue[0] ?? null;
@@ -134,7 +142,11 @@ export default function Jukebox() {
           </div>
 
           <span className="ui-badge ui-badge-outline">
-            {locked ? `Aguarde (${me?.remaining})` : `${maxSelectable - selected.size} restantes`}
+            {offNetwork
+              ? "Fora do Wi-Fi"
+              : locked
+                ? `Aguarde (${me?.remaining})`
+                : `${maxSelectable - selected.size} restantes`}
           </span>
         </div>
       </header>
@@ -160,8 +172,15 @@ export default function Jukebox() {
           </div>
         )}
 
+        {/* Aviso se o cliente não estiver conectado ao Wi-Fi da barbearia */}
+        {offNetwork && (
+          <div className="ui-panel border-red-500/60 bg-red-950/60 px-4 py-3 text-xs font-semibold text-red-200">
+            Conecte-se ao Wi-Fi da Barbearia Malungo para escolher músicas.
+          </div>
+        )}
+
         {/* Aviso apenas quando o limite de 4 foi atingido */}
-        {locked && me && (
+        {!offNetwork && locked && me && (
           <div className="ui-panel border-[#f5b316]/50 px-4 py-3 text-xs font-semibold text-[#f5b316]">
             Limite de {SIZE} músicas atingido. Você poderá escolher novamente quando {me.remaining}{" "}
             {me.remaining === 1 ? "música sua tocar" : "músicas suas tocarem"}.
